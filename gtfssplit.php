@@ -8,6 +8,14 @@
  $stopdir = "$todir/stop";
  $tmpdir = "$todir/tmp";
 
+ // step 1 area files, e.g. 60.0-25-0.txt, 60.5-25.0.txt
+ // will be rounded to 1 digit precision ("%01f")
+ define('LAT_STEP1', 0.5);
+ define('LNG_STEP1', 0.5);
+ // step 1 area files, e.g. 60.00-25-00.txt, 60.05-25.00.txt
+ // will be rounded to 2 digit precision ("%02f")
+ define('LAT_STEP2', 0.05);
+ define('LNG_STEP2', 0.05);
  define('DEBUG', true);
  define('READ_BUFFER_LENGTH', 4096);
 
@@ -26,7 +34,7 @@
  debug("*** Split calendar ***");
  $rh = fopen("$fromdir/calendar.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $service_id = $data[0];
   $tmpservicedir = "$tmpdir/service/$service_id";
   @mkdir("$tmpdir/service");
@@ -42,7 +50,7 @@
  debug("*** Split calendar dates ***");
  $rh = fopen("$fromdir/calendar_dates.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $service_id = $data[0];
   $tmpservicedir = "$tmpdir/service/$service_id";
   @mkdir("$tmpdir/service");
@@ -61,7 +69,7 @@
  }
  $rh = fopen("$fromdir/routes.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $route_id = $data[0];
   @mkdir("$routedir/$route_id");
   file_put_contents("$routedir/$route_id/$route_id.txt", $row);
@@ -78,7 +86,7 @@
  }
  $rh = fopen("$fromdir/shapes.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $shape_id = $data[0];
   $point_id = $shape_id.'-'.$data[3];
   $point = $data[1].','.$data[2];
@@ -106,13 +114,18 @@
  @mkdir("$stopdir/area");
  $rh = fopen("$fromdir/stops.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $stop_id = $data[0];
-  $lat = sprintf("%.02f", floor($data[4]*20)/20);
-  $lng = sprintf("%.02f", floor($data[5]*20)/20);
   @mkdir("$stopdir/$stop_id");
   file_put_contents("$stopdir/$stop_id/$stop_id.txt", $row);
-  file_put_contents("$stopdir/area/$lat-$lng.txt", "$row\n", FILE_APPEND);
+  if (is_numeric($data[4]) && is_numeric($data[5])) {
+   $lat1 = sprintf("%.01f", floor($data[4]*(1/LAT_STEP1))/(1/LAT_STEP1));
+   $lng1 = sprintf("%.01f", floor($data[5]*(1/LNG_STEP1))/(1/LNG_STEP1));
+   $lat2 = sprintf("%.02f", floor($data[4]*(1/LAT_STEP2))/(1/LAT_STEP2));
+   $lng2 = sprintf("%.02f", floor($data[5]*(1/LNG_STEP2))/(1/LNG_STEP2));
+   file_put_contents("$stopdir/area/$lat1-$lng1.txt", "$row\n", FILE_APPEND);
+   file_put_contents("$stopdir/area/$lat2-$lng2.txt", "$row\n", FILE_APPEND);
+  }
   debug($stop_id);
  }
  if (!feof($rh)) {
@@ -128,7 +141,7 @@
  debug("*** Split stop times***");
  $rh = fopen("$fromdir/stop_times.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $trip_id = $data[0];
   $departure = $data[2]." $trip_id\n";
   $stop_id = $data[3];
@@ -147,7 +160,7 @@
  debug("*** Split trips ***");
  $rh = fopen("$fromdir/trips.txt", r);
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
-  $data = explode(',', $row);
+  $data = str_getcsv($row);
   $route_id = $data[0];
   $service_id = $data[1];
   $trip_id = $data[2];
