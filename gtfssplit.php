@@ -9,11 +9,11 @@
  $tmpdir = "$todir/tmp";
 
  // step 1 area files, e.g. 60.0-25-0.txt, 60.5-25.0.txt
- // will be rounded to 1 digit precision ("%01f")
+ // will be rounded to 1 digit precision ("%.01f")
  define('LAT_STEP1', 0.5);
  define('LNG_STEP1', 0.5);
  // step 1 area files, e.g. 60.00-25-00.txt, 60.05-25.00.txt
- // will be rounded to 2 digit precision ("%02f")
+ // will be rounded to 2 digit precision ("%.02f")
  define('LAT_STEP2', 0.05);
  define('LNG_STEP2', 0.05);
  define('DEBUG', true);

@@ -46,10 +46,24 @@ Run gtfssplit.php and you should get (after many hours) a directory structure:
 	 area					- directory for area "tiles"
 	  <lat>-<lng>.txt		- stops in an area ("tile")
 
-The coordinates <lat> and <lng> define the tile's south and west coordinates (the
-lower left corner). The north and east coordinates (the upper right corner) are
-0.05 decimal degrees greater. Examples:
+There are two sets of area tiles. One set with 1 decimal precision and another set with
+2 decimal precision.
 
+The coordinates &lt;lat&gt; and &lt;lng&gt; define the tile's south and west coordinates
+(the lower left corner). The north and east coordinates (the upper right corner) are
+by default 0.5 or 0.05 decimal degrees greater. Examples:
+
+1 decimal precision:
+	60.0-25.0.txt			- latitude from 60.0 to 60.5, longitude from 25.0 - 25.5
+	60.5-25.0.txt			- latitude from 60.5 to 61.0, longitude from 25.0 - 25.5
+	61.0-25.0.txt			- latitude from 61.0 to 61.5, longitude from 25.0 - 25.5
+	...
+	60.0-25.5.txt			- latitude from 60.0 to 60.5, longitude from 25.5 - 26.0
+	60.0-26.0.txt			- latitude from 60.0 to 60.5, longitude from 26.0 - 26.5
+	60.0-26.5.txt			- latitude from 60.0 to 60.5, longitude from 26.5 - 27.0
+	...
+
+2 decimal precision:
 	60.00-25.00.txt			- latitude from 60.00 to 60.05, longitude from 25.00 - 25.05
 	60.05-25.00.txt			- latitude from 60.05 to 60.10, longitude from 25.00 - 25.05
 	60.10-25.00.txt			- latitude from 60.10 to 60.15, longitude from 25.00 - 25.05
@@ -59,3 +73,17 @@ lower left corner). The north and east coordinates (the upper right corner) are
 	60.00-25.15.txt			- latitude from 60.00 to 60.05, longitude from 25.15 - 25.20
 	...
 
+The steps (0.05) can be configured by editing gtfssplit.php
+	// step 1 area files, e.g. 60.0-25-0.txt, 60.5-25.0.txt
+	// will be rounded to 1 digit precision ("%.01f")
+	define('LAT_STEP1', 0.5);
+	define('LNG_STEP1', 0.5);
+	// step 1 area files, e.g. 60.00-25-00.txt, 60.05-25.00.txt
+	// will be rounded to 2 digit precision ("%.02f")
+	define('LAT_STEP2', 0.05);
+	define('LNG_STEP2', 0.05);
+
+If you set LAT_STEP1 and LNG_STEP1 to 0.1 and LAT_STEP2 and LNG_STEP2 to 0.01, you get:
+
+	60.0-25.0.txt, 60.1-25.0.txt, 60.2-25.0.txt, ..., 60.0-25.1.txt, ...
+	60.00-25.00.txt, 60.01-25.00.txt, 60.02-25.00.txt, ..., 60.00-25.01.txt, ...
