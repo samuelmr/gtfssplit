@@ -54,6 +54,7 @@ The coordinates &lt;lat&gt; and &lt;lng&gt; define the tile's south and west coo
 by default 0.5 or 0.05 decimal degrees greater. Examples:
 
 1 decimal precision:
+
 	60.0-25.0.txt			- latitude from 60.0 to 60.5, longitude from 25.0 - 25.5
 	60.5-25.0.txt			- latitude from 60.5 to 61.0, longitude from 25.0 - 25.5
 	61.0-25.0.txt			- latitude from 61.0 to 61.5, longitude from 25.0 - 25.5
@@ -64,6 +65,7 @@ by default 0.5 or 0.05 decimal degrees greater. Examples:
 	...
 
 2 decimal precision:
+
 	60.00-25.00.txt			- latitude from 60.00 to 60.05, longitude from 25.00 - 25.05
 	60.05-25.00.txt			- latitude from 60.05 to 60.10, longitude from 25.00 - 25.05
 	60.10-25.00.txt			- latitude from 60.10 to 60.15, longitude from 25.00 - 25.05
