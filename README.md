@@ -76,6 +76,7 @@ by default 0.5 or 0.05 decimal degrees greater. Examples:
 	...
 
 The steps (0.05) can be configured by editing gtfssplit.php
+
 	// step 1 area files, e.g. 60.0-25-0.txt, 60.5-25.0.txt
 	// will be rounded to 1 digit precision ("%.01f")
 	define('LAT_STEP1', 0.5);
