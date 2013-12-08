@@ -85,6 +85,8 @@
   mkdir($shapedir);
  }
  $rh = fopen("$fromdir/shapes.txt", r);
+ $prev = '';
+ $prevprev = '';
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $shape_id = $data[0];
@@ -95,12 +97,25 @@
   }
   if ($data[3] == 1) {
    file_put_contents("$shapedir/$shape_id/$shape_id.txt", $point);
+   $prev = '';
+   $prevprev = '';
   }
   else { 
    file_put_contents("$shapedir/$shape_id/$shape_id.txt", " $point", FILE_APPEND);
   }
   file_put_contents("$shapedir/$shape_id/$point_id.txt", $row);
-  debug($shape_id);
+  debug("$shape_id");
+  if ($prev && $prevprev) {
+   file_put_contents("$tmpdir/${prev}_prev.txt", "$prevprev\n", FILE_APPEND);
+  }
+  if ($prev) {
+   file_put_contents("$tmpdir/${prev}_next.txt", "$point\n", FILE_APPEND);
+  }
+  $prevprev = $prev;
+  $prev = $point;
+ }
+ if ($prev && $prevprev) {
+  file_put_contents("$tmpdir/${prev}_prev.txt", "$prevprev\n", FILE_APPEND);
  }
  if (!feof($rh)) {
   trigger_error('Error reading shapes.txt', E_USER_WARNING);
@@ -117,16 +132,70 @@
   $data = str_getcsv($row);
   $stop_id = $data[0];
   @mkdir("$stopdir/$stop_id");
-  file_put_contents("$stopdir/$stop_id/$stop_id.txt", $row);
+  $avgprevlat = $data[4];
+  $avgprevlng = $data[5];
+  $avgnextlat = $data[4];
+  $avgnextlng = $data[5];
   if (is_numeric($data[4]) && is_numeric($data[5])) {
+   if (is_file("$tmpdir/$data[4],$data[5]_prev.txt")) {
+    $prevstops = file("$tmpdir/$data[4],$data[5]_prev.txt");
+    $prevlats = array();
+    $prevlngs = array();
+    foreach($prevstops as $point) {
+      list($lat, $lng) = explode(',', $point);
+      $prevlats[] = $lat;
+      $prevlngs[] = $lng;
+    }
+    if ((count($prevlats) > 0) && (count($prevlngs) > 0)) {
+     $avgprevlat = array_sum($prevlats)/count($prevlats);
+     $avgprevlng = array_sum($prevlngs)/count($prevlngs);
+    }
+   }
+   if (is_file("$tmpdir/$data[4],$data[5]_next.txt")) {
+    $nextstops = file("$tmpdir/$data[4],$data[5]_next.txt");
+    $nextlats = array();
+    $nextlngs = array();
+    foreach($nextstops as $point) {
+      list($lat, $lng) = explode(',', $point);
+      $nextlats[] = $lat;
+      $nextlngs[] = $lng;
+    }
+    if ((count($nextlats) > 0) && (count($nextlngs) > 0)) {
+     $avgnextlat = array_sum($nextlats)/count($nextlats);
+     $avgnextlng = array_sum($nextlngs)/count($nextlngs);
+    }
+   }
+   $deg = '';
+   if ($avgprevlat && $avgprevlng && $avgnextlat && $avgnextlng) {
+    $latdiff = ($avgnextlat - $avgprevlat);
+    $lngdiff = ($avgnextlng - $avgprevlng);
+    if (($latdiff == 0) && ($lngdiff != 0)) {
+      $deg = ($avgnextlng > $avgprevlng) ? 0 : 180;
+    }
+    elseif ($lngdiff == 0) {
+      $deg = ($avgnextlat > $avgprevlat) ? 90 : 270;
+    }
+    else {
+     $deg = round(rad2deg(atan($latdiff/$lngdiff)));
+     if (($latdiff < 0) && ($lngdiff < 0)) {
+       $deg += 180;
+     }
+     if ($deg < 0) {
+       $deg += 360;
+     }
+    }
+   }
+   $row .= ",$deg";
    $lat1 = sprintf("%.01f", floor($data[4]*(1/LAT_STEP1))/(1/LAT_STEP1));
    $lng1 = sprintf("%.01f", floor($data[5]*(1/LNG_STEP1))/(1/LNG_STEP1));
    $lat2 = sprintf("%.02f", floor($data[4]*(1/LAT_STEP2))/(1/LAT_STEP2));
    $lng2 = sprintf("%.02f", floor($data[5]*(1/LNG_STEP2))/(1/LNG_STEP2));
    file_put_contents("$stopdir/area/$lat1-$lng1.txt", "$row\n", FILE_APPEND);
    file_put_contents("$stopdir/area/$lat2-$lng2.txt", "$row\n", FILE_APPEND);
+   file_put_contents("$stopdir/all.txt", "$row\n", FILE_APPEND);
+   file_put_contents("$stopdir/$stop_id/$stop_id.txt", $row);
   }
-  debug($stop_id);
+  debug("$stop_id");
  }
  if (!feof($rh)) {
   trigger_error('Error reading stops.txt', E_USER_WARNING);

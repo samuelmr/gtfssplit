@@ -40,11 +40,17 @@ Run gtfssplit.php and you should get (after many hours) a directory structure:
 	  <shape_id>.txt		- all points along the path (separated with spaces)
 	  <shape_id>-<num>.txt	- <num>th point on the path
 	tiles/<agency>/stop		- directory for all stops
+	 all.txt				- all stops (similar to stops.txt, with stop headings)
 	 <stop_id>				- directory for a single stop
 	  <stop_id>.txt			- stop name, location, description
 	  departures.txt		- all scheduled departures from this stop, one per line
 	 area					- directory for area "tiles"
 	  <lat>-<lng>.txt		- stops in an area ("tile")
+
+Stop descriptions are the same as the rows in the stops.txt file, except that the
+stop's "heading" is added to the description. Heading is the angle (in degrees) in
+which vehicles pass the stop on average. 0 degrees is from south to north, 90 degrees
+is from west to east etc.
 
 There are two sets of area tiles. One set with 1 decimal precision and another set with
 2 decimal precision.
