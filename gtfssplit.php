@@ -176,7 +176,7 @@
       $deg = ($avgnextlat > $avgprevlat) ? 90 : 270;
     }
     else {
-     $deg = round(rad2deg(atan($latdiff/$lngdiff)));
+     $deg = round(rad2deg(atan($latdiff/$lngdiff))) - 90;
      if (($latdiff < 0) && ($lngdiff < 0)) {
        $deg += 180;
      }
