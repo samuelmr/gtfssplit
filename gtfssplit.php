@@ -132,10 +132,10 @@
   $data = str_getcsv($row);
   $stop_id = $data[0];
   @mkdir("$stopdir/$stop_id");
-  $avgprevlat = $data[4];
-  $avgprevlng = $data[5];
-  $avgnextlat = $data[4];
-  $avgnextlng = $data[5];
+  $avgprevlat = merc_y($data[4]);
+  $avgprevlng = merc_x($data[5]);
+  $avgnextlat = merc_y($data[4]);
+  $avgnextlng = merc_x($data[5]);
   if (is_numeric($data[4]) && is_numeric($data[5])) {
    if (is_file("$tmpdir/$data[4],$data[5]_prev.txt")) {
     $prevstops = file("$tmpdir/$data[4],$data[5]_prev.txt");
@@ -143,8 +143,8 @@
     $prevlngs = array();
     foreach($prevstops as $point) {
       list($lat, $lng) = explode(',', $point);
-      $prevlats[] = $lat;
-      $prevlngs[] = $lng;
+      $prevlats[] = merc_y($lat);
+      $prevlngs[] = merc_x($lng);
     }
     if ((count($prevlats) > 0) && (count($prevlngs) > 0)) {
      $avgprevlat = array_sum($prevlats)/count($prevlats);
@@ -156,9 +156,9 @@
     $nextlats = array();
     $nextlngs = array();
     foreach($nextstops as $point) {
-      list($lat, $lng) = explode(',', $point);
-      $nextlats[] = $lat;
-      $nextlngs[] = $lng;
+      list($lat, $lng) = explode(',', $point);      
+      $nextlats[] = merc_y($lat);
+      $nextlngs[] = merc_x($lng);
     }
     if ((count($nextlats) > 0) && (count($nextlngs) > 0)) {
      $avgnextlat = array_sum($nextlats)/count($nextlats);
@@ -253,9 +253,36 @@
  debug("*** All done! ***");
 
  function debug($msg) {
-   if (DEBUG) {
-     print "$msg\n";
-   }
+  if (DEBUG) {
+   print "$msg\n";
+  }
+ }
+
+ function merc_x($lon) {
+  $r_major = 6378137.000;
+  return $r_major * deg2rad($lon);
+ }
+ 
+ function merc_y($lat) {
+  if ($lat > 89.5) $lat = 89.5;
+  if ($lat < -89.5) $lat = -89.5;
+  $r_major = 6378137.000;
+  $r_minor = 6356752.3142;
+  $temp = $r_minor / $r_major;
+  $es = 1.0 - ($temp * $temp);
+  $eccent = sqrt($es);
+  $phi = deg2rad($lat);
+  $sinphi = sin($phi);
+  $con = $eccent * $sinphi;
+  $com = 0.5 * $eccent;
+  $con = pow((1.0-$con)/(1.0+$con), $com);
+  $ts = tan(0.5 * ((M_PI*0.5) - $phi))/$con;
+  $y = - $r_major * log($ts);
+  return $y;
+ }
+ 
+ function merc($x, $y) {
+  return array('x'=>merc_x($x), 'y'=>merc_y($y));
  }
 
 ?>
