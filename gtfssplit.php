@@ -1,12 +1,16 @@
 <?php
- $fromdir = './data/hsl';
- $todir = './tiles/hsl';
+
+ $agency = 'HSL'; // will be a command line parameter
+
+ $fromdir = './gtfs-input/'.$agency;
+ $todir = './gtfs-output/'.$agency;
 
  $routedir = "$todir/route";
  $servicedir = "$todir/service";
  $shapedir = "$todir/shape";
  $stopdir = "$todir/stop";
  $tmpdir = "$todir/tmp";
+ $indexfile = "$todir/index.txt";
 
  // step 1 area files, e.g. 60.0-25-0.txt, 60.5-25.0.txt
  // will be rounded to 1 digit precision ("%.01f")
@@ -31,15 +35,22 @@
   mkdir($tmpdir);
  }
 
+ $openfiles = array();
  debug("*** Split calendar ***");
  $rh = fopen("$fromdir/calendar.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $service_id = $data[0];
   $tmpservicedir = "$tmpdir/service/$service_id";
   @mkdir("$tmpdir/service");
   @mkdir($tmpservicedir);
-  file_put_contents("$tmpservicedir/$service_id.txt", $row);
+  $openfile = "$tmpservicedir/$service_id.txt";
+  if (!$openfiles[$openfile]) {
+    file_put_contents($openfile, "$header\n");
+    $openfiles[$openfile] = 1;
+  }
+  file_put_contents($openfile, $row);
   debug($service_id);
  }
  if (!feof($rh)) {
@@ -49,30 +60,40 @@
 
  debug("*** Split calendar dates ***");
  $rh = fopen("$fromdir/calendar_dates.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $service_id = $data[0];
   $tmpservicedir = "$tmpdir/service/$service_id";
   @mkdir("$tmpdir/service");
   @mkdir($tmpservicedir);
-  file_put_contents("$tmpservicedir/exceptions.txt", "$data[1] $data[2]\n", FILE_APPEND);
+  $openfile = "$tmpservicedir/exceptions.txt";
+  if (!$openfiles[$openfile]) {
+    file_put_contents($openfile, "$header\n");
+    $openfiles[$openfile] = 1;
+  }
+  file_put_contents($openfile, "$row\n", FILE_APPEND);
+  # file_put_contents($openfile, "$data[1] $data[2]\n", FILE_APPEND);
   debug($service_id);
  }
  if (!feof($rh)) {
   trigger_error('Error reading calendar_dates.txt', E_USER_WARNING);
  }
  fclose($rh);
+ $openfiles = NULL;
 
  debug("*** Split routes ***");
  if (!is_dir($routedir)) {
   mkdir($routedir);
  }
  $rh = fopen("$fromdir/routes.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $route_id = $data[0];
   @mkdir("$routedir/$route_id");
-  file_put_contents("$routedir/$route_id/$route_id.txt", $row);
+  file_put_contents("$routedir/$route_id/$route_id.txt", "$header\n$row");
+  file_put_contents($indexfile, "$routedir/$route_id/$route_id.txt\n", FILE_APPEND);
   debug($route_id);
  }
  if (!feof($rh)) {
@@ -87,6 +108,7 @@
  $rh = fopen("$fromdir/shapes.txt", r);
  $prev = '';
  $prevprev = '';
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $shape_id = $data[0];
@@ -103,7 +125,8 @@
   else { 
    file_put_contents("$shapedir/$shape_id/$shape_id.txt", " $point", FILE_APPEND);
   }
-  file_put_contents("$shapedir/$shape_id/$point_id.txt", $row);
+  file_put_contents("$shapedir/$shape_id/$point_id.txt", "$header\n$row");
+  file_put_contents($indexfile, "$shapedir/$shape_id/$point_id.txt\n", FILE_APPEND);
   debug("$shape_id");
   if ($prev && $prevprev) {
    file_put_contents("$tmpdir/${prev}_prev.txt", "$prevprev\n", FILE_APPEND);
@@ -128,6 +151,9 @@
  }
  @mkdir("$stopdir/area");
  $rh = fopen("$fromdir/stops.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
+ file_put_contents("$stopdir/all.txt", "$header\n");
+ $areafiles = array();
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $stop_id = $data[0];
@@ -190,10 +216,22 @@
    $lng1 = sprintf("%.01f", floor($data[5]*(1/LNG_STEP1))/(1/LNG_STEP1));
    $lat2 = sprintf("%.02f", floor($data[4]*(1/LAT_STEP2))/(1/LAT_STEP2));
    $lng2 = sprintf("%.02f", floor($data[5]*(1/LNG_STEP2))/(1/LNG_STEP2));
-   file_put_contents("$stopdir/area/$lat1-$lng1.txt", "$row\n", FILE_APPEND);
-   file_put_contents("$stopdir/area/$lat2-$lng2.txt", "$row\n", FILE_APPEND);
+   $areafile1 = "$stopdir/area/$lat1-$lng1.txt";
+   if (!$areafiles[$areafile1]) {
+     file_put_contents($areafile1, "$header\n");
+     $areafiles[$areafile1] = 1;
+     file_put_contents($indexfile, "$areafile1\n", FILE_APPEND);
+   }
+   file_put_contents($areafile1, "$row\n", FILE_APPEND);
+   $areafile2 = "$stopdir/area/$lat2-$lng2.txt";
+   if (!$areafiles[$areafile2]) {
+     file_put_contents($areafile2, "$header\n");
+     $areafiles[$areafile2] = 1;
+     file_put_contents($indexfile, "$areafile2\n", FILE_APPEND);
+   }
+   file_put_contents($areafile2, "$row\n", FILE_APPEND);
    file_put_contents("$stopdir/all.txt", "$row\n", FILE_APPEND);
-   file_put_contents("$stopdir/$stop_id/$stop_id.txt", $row);
+   file_put_contents("$stopdir/$stop_id/$stop_id.txt", "$header\n$row");
   }
   debug("$stop_id");
  }
@@ -202,13 +240,16 @@
  }
  fclose($rh);
 
- foreach (glob("*-*.txt") as $areatile) {
-  debug($areatile);
-  exec("sort $areatile | uniq > $areatile");
+ # foreach (glob("*-*.txt") as $areatile) {
+ foreach ($areafiles as $areafile => $num) {
+  debug($areafile);
+  exec("sort $areafile | uniq > $areafile");	
  }
 
+ $openfiles = array();
  debug("*** Split stop times***");
  $rh = fopen("$fromdir/stop_times.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $trip_id = $data[0];
@@ -217,8 +258,15 @@
   $tmptripdir = "$tmpdir/trip/$trip_id";
   @mkdir("$tmpdir/trip");
   @mkdir($tmptripdir);
-  file_put_contents("$tmptripdir/$trip_id.txt", $row, FILE_APPEND);
+  $openfile = "$tmptripdir/$trip_id.txt";
+  if (!$openfiles[$openfile]) {
+    file_put_contents($openfile, "$header\n");
+    $openfiles[$openfile] = 1;
+    file_put_contents($indexfile, "$openfile\n", FILE_APPEND);
+  }
+  file_put_contents($openfile, "$row\n", FILE_APPEND);
   file_put_contents("$stopdir/$stop_id/departures.txt", $departure, FILE_APPEND);
+  file_put_contents($indexfile, "$stopdir/$stop_id/departures.txt\n", FILE_APPEND);
   debug($trip_id);
  }
  if (!feof($rh)) {
@@ -228,6 +276,7 @@
 
  debug("*** Split trips ***");
  $rh = fopen("$fromdir/trips.txt", r);
+ $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
  while (($row = stream_get_line($rh, READ_BUFFER_LENGTH, "\n")) !== false) {
   $data = str_getcsv($row);
   $route_id = $data[0];
@@ -241,8 +290,11 @@
   @copy("$shapedir/$shape_id/$shape_id.txt", "$tripdir/shape.txt");
   @mkdir("$tripdir/time");
   @rename("$tmpdir/trip/$trip_id", "$tripdir/time");
+  file_put_contents($indexfile, "$tripdir/time\n", FILE_APPEND); // dir
   @rename("$tmpdir/service/$service_id", "$routedir/$route_id/$service_id/date");
-  file_put_contents("$tripdir/$trip_id.txt", $row);
+  file_put_contents($indexfile, "$routedir/$route_id/$service_id/date\n", FILE_APPEND); // dir
+  file_put_contents("$tripdir/$trip_id.txt", "$header\n$row");
+  file_put_contents($indexfile, "$tripdir/$trip_id.txt\n", FILE_APPEND);
   debug($trip_id);
  }
  if (!feof($rh)) {
