@@ -7,7 +7,7 @@ Usage
 -----
 
 Create at least a 6 GB (6,000 * 2,048 = 12,288,000 blocks) RAM disk for
-output. Run:
+output. On OS X, run the following command in Terminal:
 
     diskutil erasevolume HFS+ 'RAMdisk' `hdiutil attach -nomount ram://12288000`
  
