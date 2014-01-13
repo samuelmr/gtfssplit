@@ -11,17 +11,22 @@
  // will be rounded to 2 digit precision ("%.02f")
  define('LAT_STEP2', 0.05);
  define('LNG_STEP2', 0.05);
- // DEBUG levels: 1: a few messages per input file; 2: a few messages per output file
+ // DEBUG levels: 1: a few messages per input file
+ //               2: a few messages per output file
  define('DEBUG', 1);
  define('READ_BUFFER_LENGTH', 4096);
 
- $agency = 'HSL'; // will be a command line parameter
-
- $fromdir = './gtfs-input/'.$agency;
- # $todir = './gtfs-output/'.$agency;
- # Create a 6 GB (6000 * 2048 = 12288000 blocks) RAM disk for output. Run:
- #  diskutil erasevolume HFS+ 'RAMdisk' `hdiutil attach -nomount ram://12288000`
- $todir = '/Volumes/RAMdisk/gtfs-output/'.$agency;
+ $opts = array("in:", "out:");
+ $options = getopt('', $opts);
+ 
+ if (!$options['in'] || !$options['out']) {
+  echo "Usage: php ".basename(__FILE__).
+       " --in <inputdir> --out <outputdir>\n";
+  exit; 
+ }
+ 
+ $fromdir = $options['in'];
+ $todir = $options['out'];
 
  $routedir = "$todir/route";
  $servicedir = "$todir/service";
@@ -38,10 +43,10 @@
  $parse_calendar_dates = TRUE;
  $parse_routes = TRUE;
  $parse_shapes = TRUE;
- $parse_stop_times = TRUE;
  $parse_stops = TRUE;
+ $parse_stop_times = TRUE;
  $parse_trips = TRUE;
- $update_package = TRUE;
+ $update_package = FALSE;
 
  // https://developers.google.com/transit/gtfs/reference
  // all other field types are strings
@@ -444,6 +449,7 @@
    $trip_id = $data[$trip_key];
    $shape_id = $data[$shape_key];
    $tripdir = "$routedir/$route_id/$service_id/$trip_id";
+   @mkdir("$routedir");
    @mkdir("$routedir/$route_id");
    @mkdir("$routedir/$route_id/$service_id");
    @mkdir($tripdir);
@@ -453,24 +459,30 @@
    @rename("$tmpdir/trip/$trip_id/stops.txt", "$tripdir/stops.txt");
 */
    if (!$routes_done[$route_id]) {
-    $routeinfo = file("$routedir/$route_id/$route_id.txt");
-    $routeheader = $routeinfo[0];
-    $route_keys = str_getcsv($routeheader);
-    $routedata = $routeinfo[1];
-    $triprows = file("$tmpdir/trip/$trip_id/$trip_id.txt");
-    for ($i=1; $i<count($triprows); $i++) {
-     $triprow = str_getcsv($†riprows[$i]);
-     $stop_id = $triprow[3];
-     if (!is_file("$stopdir/$stop_id/routes.txt")) {
-      file_put_contents("$stopdir/$stop_id/routes.txt", $routeheader);
-      file_put_contents($indexfile, "$stopdir/$stop_id/routes.txt\n", FILE_APPEND);
-      if ($update_package) {
-       add_resource("$stopdir/$stop_id/routes.txt", $route_keys);
+    $routeinfo = @file("$routedir/$route_id/$route_id.txt");
+    if ($routeinfo) {
+     $routeheader = $routeinfo[0];
+     $route_keys = str_getcsv($routeheader);
+     $routedata = $routeinfo[1];
+     $triprows = @file("$tmpdir/trip/$trip_id/$trip_id.txt");
+     $tripheader = $triprows[0];
+     $trip_keys = str_getcsv($tripheader);
+     $stop_key = array_search('stop_id', $trip_keys);
+     for ($i=1; $i<count($triprows); $i++) {
+      $triprow = str_getcsv($triprows[$i]);
+      $stop_id = $triprow[$stop_key];
+      @mkdir("$stopdir/$stop_id");
+      if ($stop_id && !is_file("$stopdir/$stop_id/routes.txt")) {
+       file_put_contents("$stopdir/$stop_id/routes.txt", $routeheader);
+       file_put_contents($indexfile, "$stopdir/$stop_id/routes.txt\n", FILE_APPEND);
+       if ($update_package) {
+        add_resource("$stopdir/$stop_id/routes.txt", $route_keys);
+       }
       }
+      file_put_contents("$stopdir/$stop_id/routes.txt", "$routedata\n", FILE_APPEND);
      }
-     file_put_contents("$stopdir/$stop_id/routes.txt", $routedata);
+     $routes_done[$route_id] = 1;
     }
-    $routes_done[$route_id] = 1;
    }
    if (!$services_done[$service_id]) {
     @rename("$tmpdir/service/$service_id/$service_id.txt",
@@ -513,10 +525,7 @@
   debug("Stops parsed in ".gmdate("H \h, i \m, s \s", $tmptime - $prevtmp), 1);
  }
 
- if ($update_package) {
-  $package = array('name' => "$agency-GTFS", 'resources' => $resources);
-  file_put_contents($datapackage, json_encode($package));
- }
+ write_resources();
 
  exec("sort $indexfile -o $indexfile");	
  debug("*** All done! ***", 1);
@@ -527,14 +536,13 @@
    print "$msg\n";
   }
  }
- 
 
  function add_resource($path, $names=NULL) {
   global $resources;
   global $gtfs_types;
   $fields = array();
   if (!$names) {
-   $rh = fopen("$tripdir/times.txt", r);
+   $rh = fopen($path, r);
    $header = stream_get_line($rh, READ_BUFFER_LENGTH, "\n");
    $names = str_getcsv($header);  
   }
@@ -551,7 +559,14 @@
    $fields[] = $arr;
   }
   $resources[] = array("path" => $path, "schema" => array("fields" => $fields));
-  debug("Added path $path to resources (".count($resources).")");
+  debug("Added path $path to resources (".count($resources).")", 2);
+ }
+
+ function write_resources() {
+  if ($update_package) {
+   $package = array('name' => "$agency-GTFS", 'resources' => $resources);
+   file_put_contents($datapackage, json_encode($package));
+  }
  }
 
  function merc_x($lon) {
