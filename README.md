@@ -6,7 +6,8 @@ Split GTFS files to smaller chunks.
 Usage
 -----
 
-Create a 6 GB (6000 * 2048 = 12288000 blocks) RAM disk for output. Run:
+Create at least a 6 GB (6,000 * 2,048 = 12,288,000 blocks) RAM disk for
+output. Run:
 
     diskutil erasevolume HFS+ 'RAMdisk' `hdiutil attach -nomount ram://12288000`
  
