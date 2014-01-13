@@ -7,6 +7,7 @@ Usage
 -----
 
 Create a 6 GB (6000 * 2048 = 12288000 blocks) RAM disk for output. Run:
+
     diskutil erasevolume HFS+ 'RAMdisk' `hdiutil attach -nomount ram://12288000`
  
 Create a new directory for each agency. (E.g. ./gtfs-input/HSL for
@@ -26,6 +27,7 @@ directory. You should get:
 
 Run gtfssplit.php to use this agency's files (note that the path to
 your RAMdisk may differ depending on your operating system):
+
     php gtfssplit.php --in ./gtfs-input/HSL --out /Volumes/RAMdisk/gtfs-output/HSL/
 
 After some time, you should get a directory structure into
