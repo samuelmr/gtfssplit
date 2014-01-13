@@ -375,7 +375,7 @@
   fclose($rh);
   foreach ($areafiles as $areafile => $num) {
    debug("Sort area: ".$areafile, 2);
-   exec("sort -u $areafile -o $areafile");	
+   exec("sort -uk2 $areafile -o $areafile");	
   }
   $prevtmp = $tmptime;
   $tmptime = microtime(true);
