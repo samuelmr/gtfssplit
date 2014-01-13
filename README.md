@@ -30,6 +30,9 @@ your RAMdisk may differ depending on your operating system):
 
     php gtfssplit.php --in ./gtfs-input/HSL --out /Volumes/RAMdisk/gtfs-output/HSL/
 
+Results
+-------
+
 After some time, you should get a directory structure into
 `RAMdisk/gtfs-output/<agency>`:
 
