@@ -28,11 +28,18 @@
  $fromdir = $options['in'];
  $todir = $options['out'];
 
- $routedir = "$todir/route";
- $servicedir = "$todir/service";
- $shapedir = "$todir/shape";
- $stopdir = "$todir/stop";
- $tmpdir = "$todir/tmp";
+ $routerel = "route";
+ $servicerel = "service";
+ $shaperel = "shape";
+ $stoprel = "stop";
+ $tmprel = "tmp";
+
+ $routedir = "$todir/$routerel";
+ $servicedir = "$todir/$servicerel";
+ $shapedir = "$todir/$shaperel";
+ $stopdir = "$todir/$stoprel";
+ $tmpdir = "$todir/$tmprel";
+
  $indexfile = "$todir/index.txt";
  // http://dataprotocols.org/simple-data-format/
  $datapackage = "$todir/datapackage.json";
@@ -168,7 +175,7 @@
    $routenames[$route_id] = $data['route_short_name'];
    @mkdir("$routedir/$route_id");
    file_put_contents("$routedir/$route_id/$route_id.txt", "$header\n$row");
-   file_put_contents($indexfile, "$routedir/$route_id/$route_id.txt\n", FILE_APPEND);
+   file_put_contents($indexfile, "$routerel/$route_id/$route_id.txt\n", FILE_APPEND);
    if ($update_package) {
     add_resource("$routedir/$route_id/$route_id.txt", $keys);
    }
@@ -208,7 +215,7 @@
    }
    if ($data[3] == 1) {
     file_put_contents("$shapedir/$shape_id/$shape_id.txt", "$shapehead\n$point\n");
-    file_put_contents($indexfile, "$shapedir/$shape_id/$shape_id.txt\n", FILE_APPEND);
+    file_put_contents($indexfile, "$shaperel/$shape_id/$shape_id.txt\n", FILE_APPEND);
     if ($update_package) {
      add_resource("$shapedir/$shape_id/$shape_id.txt", str_getcsv($shapehead));
     } 
@@ -222,7 +229,7 @@
 /*
    // is it necessary at all to save individual points into separate files?
    file_put_contents("$shapedir/$shape_id/$point_id.txt", "$header\n$row");
-   file_put_contents($indexfile, "$shapedir/$shape_id/$point_id.txt\n", FILE_APPEND);
+   file_put_contents($indexfile, "$shaperel/$shape_id/$point_id.txt\n", FILE_APPEND);
    if ($update_package) {
     add_resource("$shapedir/$shape_id/$point_id.txt", $keys);
    } 
@@ -267,7 +274,7 @@
   $lat_key = array_search('stop_lat', $keys);
   $lon_key = array_search('stop_lon', $keys);
   file_put_contents("$stopdir/all.txt", "$header\n");
-  file_put_contents($indexfile, "$stopdir/all.txt\n", FILE_APPEND);
+  file_put_contents($indexfile, "$stoprel/all.txt\n", FILE_APPEND);
   if ($update_package) {
    add_resource("$stopdir/all.txt", $keys);
   }
@@ -344,7 +351,7 @@
     if (!$areafiles[$areafile1]) {
      file_put_contents($areafile1, "$header\n");
      $areafiles[$areafile1] = 1;
-     file_put_contents($indexfile, "$areafile1\n", FILE_APPEND);
+     file_put_contents($indexfile, "$stoprel/area/$lat1-$lng1.txt\n", FILE_APPEND);
      if ($update_package) {
       add_resource($areafile1, $keys);
      }
@@ -354,7 +361,7 @@
     if (!$areafiles[$areafile2]) {
      file_put_contents($areafile2, "$header\n");
      $areafiles[$areafile2] = 1;
-     file_put_contents($indexfile, "$areafile2\n", FILE_APPEND);
+     file_put_contents($indexfile, "$stoprel/area/$lat2-$lng2.txt\n", FILE_APPEND);
      if ($update_package) {
       add_resource($areafile2, $keys);
      }
@@ -362,7 +369,7 @@
     file_put_contents($areafile2, "$row\n", FILE_APPEND);
     file_put_contents("$stopdir/all.txt", "$row\n", FILE_APPEND);
     file_put_contents("$stopdir/$stop_id/$stop_id.txt", "$header\n$row");
-    @file_put_contents($indexfile, "$stopdir/$stop_id/$stop_id.txt\n", FILE_APPEND);
+    @file_put_contents($indexfile, "$stoprel/$stop_id/$stop_id.txt\n", FILE_APPEND);
     if ($update_package) {
      add_resource("$stopdir/$stop_id/$stop_id.txt", $keys);
     }
@@ -413,7 +420,7 @@
 */
    if (!is_file("$stopdir/$stop_id/departures.txt")) {
     @file_put_contents("$stopdir/$stop_id/departures.txt", join(',', $dep_keys)."\n");
-    @file_put_contents($indexfile, "$stopdir/$stop_id/departures.txt\n", FILE_APPEND);
+    @file_put_contents($indexfile, "$stoprel/$stop_id/departures.txt\n", FILE_APPEND);
     if ($update_package) {
      add_resource("$stopdir/$stop_id/departures.txt", $dep_keys);
     }
@@ -474,7 +481,7 @@
       @mkdir("$stopdir/$stop_id");
       if ($stop_id && !is_file("$stopdir/$stop_id/routes.txt")) {
        file_put_contents("$stopdir/$stop_id/routes.txt", $routeheader);
-       file_put_contents($indexfile, "$stopdir/$stop_id/routes.txt\n", FILE_APPEND);
+       file_put_contents($indexfile, "$stoprel/$stop_id/routes.txt\n", FILE_APPEND);
        if ($update_package) {
         add_resource("$stopdir/$stop_id/routes.txt", $route_keys);
        }
@@ -487,7 +494,7 @@
    if (!$services_done[$service_id]) {
     @rename("$tmpdir/service/$service_id/$service_id.txt",
             "$routedir/$route_id/$service_id/dates.txt");
-    file_put_contents($indexfile, "$routedir/$route_id/$service_id/dates.txt\n",
+    file_put_contents($indexfile, "$routerel/$route_id/$service_id/dates.txt\n",
                       FILE_APPEND);
     if ($update_package) {
      add_resource("$routedir/$route_id/$service_id/dates.txt");
@@ -495,7 +502,7 @@
     if (is_file("$tmpdir/service/$service_id/exceptions.txt")) {
      rename("$tmpdir/service/$service_id/exceptions.txt",
             "$routedir/$route_id/$service_id/exceptions.txt");
-     file_put_contents($indexfile, "$routedir/$route_id/$service_id/exceptions.txt\n",
+     file_put_contents($indexfile, "$routerel/$route_id/$service_id/exceptions.txt\n",
                        FILE_APPEND);
     }
     if ($update_package) {
@@ -504,12 +511,12 @@
     $services_done[$service_id] = 1;
    }
    @rename("$tmpdir/trip/$trip_id/$trip_id.txt", "$tripdir/stops.txt");
-   file_put_contents($indexfile, "$tripdir/stops.txt\n", FILE_APPEND);
+   file_put_contents($indexfile, "$triprel/stops.txt\n", FILE_APPEND);
    if ($update_package) {
     add_resource("$tripdir/stops.txt");
    }
    file_put_contents("$tripdir/$trip_id.txt", "$header\n$row"); 
-   file_put_contents($indexfile, "$tripdir/$trip_id.txt\n", FILE_APPEND);
+   file_put_contents($indexfile, "$triprel/$trip_id.txt\n", FILE_APPEND);
    if ($update_package) {
     add_resource("$tripdir/$trip_id.txt", $keys);
     }
