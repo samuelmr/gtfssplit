@@ -29,7 +29,7 @@ directory. You should get:
 Run gtfssplit.php to use this agency's files (note that the path to
 your RAMdisk may differ depending on your operating system):
 
-    php gtfssplit.php --in ./gtfs-input/HSL --out /Volumes/RAMdisk/gtfs-output/HSL/
+    php gtfssplit.php --in ./gtfs-input/HSL --out /Volumes/RAMdisk/gtfs-output/HSL
 
 Results
 -------
